@@ -9,6 +9,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.google.common.base.Preconditions.checkArgument
 import com.google.common.base.Preconditions.checkState
 import com.intellij.openapi.diagnostic.Logger
+import com.longcb.vimonintellij.neovim.notificationhandler.NotificationHandlerFactory
 import org.msgpack.jackson.dataformat.MessagePackFactory
 import java.io.IOException
 import java.io.UncheckedIOException
@@ -22,7 +23,7 @@ import java.util.concurrent.Future
 
 
 class NeovimApi(private val connection: Connection) : AutoCloseable {
-    private val logger = Logger.getInstance(this.javaClass)
+    private val logger = Logger.getInstance(javaClass)
     private var receiverFuture: Future<*>? = null
     private val callbacks: ConcurrentMap<Long, RequestCallback<*>> = ConcurrentHashMap()
     private val executorService: ExecutorService by lazy {
@@ -32,6 +33,8 @@ class NeovimApi(private val connection: Connection) : AutoCloseable {
         .registerKotlinModule()
         .configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false)
         .configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false)
+
+    private val notificationHandlerFactory = NotificationHandlerFactory()
 
     init {
         startReadingInputStream()
@@ -127,9 +130,10 @@ class NeovimApi(private val connection: Connection) : AutoCloseable {
         checkArgument(node.isArray, "Node needs to be an array")
         checkArgument(node.size() == 3, "Notification array should be size 3")
 
-        val method: String = getText(node[1])
-        val arg = node[2]
-        // notificationHandler.accept(method, arg)
+        val method = getText(node[1])
+        val args = node[2]
+
+        notificationHandlerFactory.getHandler(method).handle(args)
     }
 
     private fun handleRequest(node: JsonNode) {
