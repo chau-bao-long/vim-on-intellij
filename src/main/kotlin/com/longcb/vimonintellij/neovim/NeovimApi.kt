@@ -21,7 +21,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
-
 class NeovimApi(private val connection: Connection) : AutoCloseable {
     private val logger = Logger.getInstance(javaClass)
     private var receiverFuture: Future<*>? = null
@@ -39,6 +38,12 @@ class NeovimApi(private val connection: Connection) : AutoCloseable {
     init {
         startReadingInputStream()
     }
+
+    fun openFile(path: String) {
+        val request = Request(method = "nvim_command", args = listOf("edit $path"))
+
+        sendRequest(request, Any::class.java)
+    } 
 
     fun getVimInfo(): CompletableFuture<Any> {
         val request = Request(method = "nvim_get_api_info", args = emptyList())

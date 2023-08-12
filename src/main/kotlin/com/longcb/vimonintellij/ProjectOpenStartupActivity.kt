@@ -8,8 +8,6 @@ class ProjectOpenStartupActivity : StartupActivity.DumbAware {
     override fun runActivity(project: Project) {
         val vimOnIntellijService = ApplicationManager.getApplication().getService(VimOnIntellijService::class.java)
 
-        ApplicationManager.getApplication().invokeLater {
-            vimOnIntellijService.getVimInfo()
-        }
+        vimOnIntellijService.listenToFileEvents(project)
     }
 }

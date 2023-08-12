@@ -28,5 +28,4 @@ internal class BufEnterHandler : INotificationHandler {
                 .openFile(virtualFile, true)
         }
     }
-
 }
