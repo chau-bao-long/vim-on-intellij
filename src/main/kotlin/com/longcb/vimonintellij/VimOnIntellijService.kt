@@ -2,9 +2,11 @@ package com.longcb.vimonintellij
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.project.Project
+import com.longcb.vimonintellij.intellij.listeners.CaretEventsListener
 import com.longcb.vimonintellij.intellij.listeners.FileEventsListener
 import com.longcb.vimonintellij.neovim.NeovimApi
 import com.longcb.vimonintellij.neovim.SocketConnection
@@ -22,6 +24,10 @@ class VimOnIntellijService {
         project.messageBus.connect().subscribe(
             topic = FileEditorManagerListener.FILE_EDITOR_MANAGER,
             handler = FileEventsListener(neovimApi),
+        )
+        EditorFactory.getInstance().eventMulticaster.addCaretListener(
+            CaretEventsListener(neovimApi),
+            neovimApi,
         )
     }
 

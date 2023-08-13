@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.google.common.base.Preconditions.checkArgument
 import com.google.common.base.Preconditions.checkState
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
 import com.longcb.vimonintellij.neovim.notificationhandler.NotificationHandlerFactory
 import org.msgpack.jackson.dataformat.MessagePackFactory
@@ -21,7 +22,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
-class NeovimApi(private val connection: Connection) : AutoCloseable {
+class NeovimApi(private val connection: Connection) : Disposable {
     private val logger = Logger.getInstance(javaClass)
     private var receiverFuture: Future<*>? = null
     private val callbacks: ConcurrentMap<Long, RequestCallback<*>> = ConcurrentHashMap()
@@ -37,6 +38,15 @@ class NeovimApi(private val connection: Connection) : AutoCloseable {
 
     init {
         startReadingInputStream()
+    }
+
+    fun moveCursor(offset: Int) {
+        val request = Request(
+            method = "nvim_exec_lua",
+            args = listOf("require'intellij-on-vim'.move_cursor($offset)", listOf<Any>()),
+        )
+
+        sendRequest(request, Any::class.java)
     }
 
     fun openFile(path: String) {
@@ -172,7 +182,7 @@ class NeovimApi(private val connection: Connection) : AutoCloseable {
         }
     }
 
-    override fun close() {
+    override fun dispose() {
         connection.close()
         executorService.shutdown()
 
