@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions.checkState
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
 import com.longcb.vimonintellij.neovim.notificationhandler.NotificationHandlerFactory
+import com.longcb.vimonintellij.neovim.requesthandler.RequestHandlerFactory
 import org.msgpack.jackson.dataformat.MessagePackFactory
 import java.io.IOException
 import java.io.UncheckedIOException
@@ -35,6 +36,7 @@ class NeovimApi(private val connection: Connection) : Disposable {
         .configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false)
 
     private val notificationHandlerFactory = NotificationHandlerFactory()
+    private val requestHandlerFactory = RequestHandlerFactory()
 
     init {
         startReadingInputStream()
@@ -157,11 +159,14 @@ class NeovimApi(private val connection: Connection) : Disposable {
 
         val requestId = node[1].asLong()
         val method: String = getText(node[2])
-        val arg = node[3]
-        //val result: Any = requestHandler.apply(method, arg)
+        val args = node[3]
+
+        val result = requestHandlerFactory.getHandler(method).handle(args)
+
         try {
-            //send(Response(requestId, result))
+            send(Response(requestId, null, result))
         } catch (e: IOException) {
+            logger.error("Error when response: $e")
         }
     }
 
