@@ -4,8 +4,8 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.Socket
 
-class SocketConnection(host: String, port: Int) : Connection {
-    private val socket: Socket
+class SocketConnection(private val host: String, private val port: Int) : Connection {
+    private var socket: Socket
 
     init {
         socket = Socket(host, port)
@@ -17,6 +17,18 @@ class SocketConnection(host: String, port: Int) : Connection {
 
     override val outputStream: OutputStream
         get() = socket.getOutputStream()
+
+    override fun resetConnect() {
+        if (!socket.isClosed) {
+            socket.close()
+        }
+
+        socket = Socket(host, port)
+    }
+
+    override fun isConnected() = socket.isConnected
+
+    override fun isClosed() = socket.isClosed
 
     override fun close() {
         outputStream.close()

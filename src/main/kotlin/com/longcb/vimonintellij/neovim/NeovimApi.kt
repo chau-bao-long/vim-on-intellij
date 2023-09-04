@@ -14,7 +14,7 @@ import com.longcb.vimonintellij.neovim.notificationhandler.NotificationHandlerFa
 import com.longcb.vimonintellij.neovim.requesthandler.RequestHandlerFactory
 import org.msgpack.jackson.dataformat.MessagePackFactory
 import java.io.IOException
-import java.io.UncheckedIOException
+import java.net.ConnectException
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -28,8 +28,9 @@ class NeovimApi(private val connection: Connection) : Disposable {
     private var receiverFuture: Future<*>? = null
     private val callbacks: ConcurrentMap<Long, RequestCallback<*>> = ConcurrentHashMap()
     private val executorService: ExecutorService by lazy {
-        Executors.newSingleThreadExecutor()
+        Executors.newFixedThreadPool(2)
     }
+
     private val objectMapper = ObjectMapper(MessagePackFactory())
         .registerKotlinModule()
         .configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false)
@@ -37,6 +38,7 @@ class NeovimApi(private val connection: Connection) : Disposable {
 
     private val notificationHandlerFactory = NotificationHandlerFactory()
     private val requestHandlerFactory = RequestHandlerFactory()
+    private var isReconnecting = false
 
     init {
         startReadingInputStream()
@@ -55,7 +57,7 @@ class NeovimApi(private val connection: Connection) : Disposable {
         val request = Request(method = "nvim_command", args = listOf("edit $path"))
 
         sendRequest(request, Any::class.java)
-    } 
+    }
 
     fun getVimInfo(): CompletableFuture<Any> {
         val request = Request(method = "nvim_get_api_info", args = emptyList())
@@ -78,7 +80,7 @@ class NeovimApi(private val connection: Connection) : Disposable {
             callbacks.remove(request.id)
             callback.completableFuture.completeExceptionally(e)
 
-            throw UncheckedIOException(e)
+            connection.close()
         }
         return callback.completableFuture
     }
@@ -98,12 +100,19 @@ class NeovimApi(private val connection: Connection) : Disposable {
     }
 
     private fun send(message: Message) {
-        logger.info("Sent message: $message")
+        if (isReconnecting) return
 
-        val outputStream = connection.outputStream
-        objectMapper.writeValue(outputStream, message)
+        logger.info("Send message: $message")
 
-        outputStream.flush()
+        try {
+            val outputStream = connection.outputStream
+            objectMapper.writeValue(outputStream, message)
+
+            outputStream.flush()
+        } catch (ex: IOException) {
+            logger.warn("Cannot send message: $ex")
+            executorService.submit(::reconnect)
+        }
     }
 
     private fun readFromInput() {
@@ -114,7 +123,6 @@ class NeovimApi(private val connection: Connection) : Disposable {
                 logger.info("Got data from input $jsonNode")
 
                 if (jsonNode == null) {
-                    logger.error("Interrupt thread.")
                     Thread.currentThread().interrupt()
                     continue
                 }
@@ -125,6 +133,28 @@ class NeovimApi(private val connection: Connection) : Disposable {
                 Thread.currentThread().interrupt()
             }
         }
+        executorService.submit(::reconnect)
+
+        receiverFuture?.cancel(true)
+        receiverFuture = null
+    }
+
+    private fun reconnect() {
+        isReconnecting = true
+
+         while (isReconnecting) {
+            try {
+                Thread.sleep(1000)
+                logger.info("Reconnecting ...")
+                connection.resetConnect()
+            } catch (ex: ConnectException) {
+                continue
+            }
+
+            isReconnecting = false
+        }
+
+        startReadingInputStream()
     }
 
     private fun handleInputData(node: JsonNode) {

@@ -7,5 +7,11 @@ import java.io.OutputStream
 interface Connection : Closeable {
     val inputStream: InputStream
     val outputStream: OutputStream
+
+    fun resetConnect()
+
+    fun isClosed(): Boolean
+
+    fun isConnected(): Boolean
 }
 
