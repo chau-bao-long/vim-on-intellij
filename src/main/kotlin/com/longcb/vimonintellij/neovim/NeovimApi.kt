@@ -14,7 +14,6 @@ import com.longcb.vimonintellij.neovim.notificationhandler.NotificationHandlerFa
 import com.longcb.vimonintellij.neovim.requesthandler.RequestHandlerFactory
 import org.msgpack.jackson.dataformat.MessagePackFactory
 import java.io.IOException
-import java.net.ConnectException
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -38,10 +37,13 @@ class NeovimApi(private val connection: Connection) : Disposable {
 
     private val notificationHandlerFactory = NotificationHandlerFactory()
     private val requestHandlerFactory = RequestHandlerFactory()
-    private var isReconnecting = false
 
     init {
-        startReadingInputStream()
+        if (!connection.isConnected()) {
+            executorService.submit(::reconnect)
+        } else {
+            startReadingInputStream()
+        }
     }
 
     fun moveCursor(offset: Int) {
@@ -100,7 +102,7 @@ class NeovimApi(private val connection: Connection) : Disposable {
     }
 
     private fun send(message: Message) {
-        if (isReconnecting) return
+        if (!connection.isConnected()) return
 
         logger.info("Send message: $message")
 
@@ -108,7 +110,7 @@ class NeovimApi(private val connection: Connection) : Disposable {
             val outputStream = connection.outputStream
             objectMapper.writeValue(outputStream, message)
 
-            outputStream.flush()
+            outputStream?.flush()
         } catch (ex: IOException) {
             logger.warn("Cannot send message: $ex")
             executorService.submit(::reconnect)
@@ -116,6 +118,8 @@ class NeovimApi(private val connection: Connection) : Disposable {
     }
 
     private fun readFromInput() {
+        if (!connection.isConnected()) return
+
         while (!Thread.interrupted()) {
             try {
                 val jsonNode = objectMapper.readTree(connection.inputStream)
@@ -140,19 +144,11 @@ class NeovimApi(private val connection: Connection) : Disposable {
     }
 
     private fun reconnect() {
-        isReconnecting = true
-
-         while (isReconnecting) {
-            try {
-                Thread.sleep(1000)
-                logger.info("Reconnecting ...")
-                connection.resetConnect()
-            } catch (ex: ConnectException) {
-                continue
-            }
-
-            isReconnecting = false
-        }
+         do {
+             Thread.sleep(1000)
+             logger.info("Reconnecting ...")
+             connection.resetConnect()
+        } while (!connection.isConnected())
 
         startReadingInputStream()
     }
