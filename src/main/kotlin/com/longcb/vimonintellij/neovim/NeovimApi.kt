@@ -46,6 +46,18 @@ class NeovimApi(private val connection: Connection) : Disposable {
         }
     }
 
+    fun reloadCurrentBuffer() {
+        val request = Request(
+            method = "nvim_exec_lua",
+            args = listOf(
+                "if not require('intellij-on-vim.events').is_vim_focused then vim.cmd('e!') end",
+                listOf<Any>(),
+            ),
+        )
+
+        sendRequest(request, Any::class.java)
+    }
+
     fun moveCursor(offset: Int) {
         val request = Request(
             method = "nvim_exec_lua",
@@ -56,7 +68,13 @@ class NeovimApi(private val connection: Connection) : Disposable {
     }
 
     fun openFile(path: String) {
-        val request = Request(method = "nvim_command", args = listOf("edit $path"))
+        val request = Request(
+            method = "nvim_exec_lua",
+            args = listOf(
+                "if not require('intellij-on-vim.events').is_vim_focused then vim.cmd('e $path') end",
+                listOf<Any>(),
+            ),
+        )
 
         sendRequest(request, Any::class.java)
     }

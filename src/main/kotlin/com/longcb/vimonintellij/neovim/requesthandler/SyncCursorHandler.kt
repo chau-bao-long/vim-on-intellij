@@ -2,6 +2,8 @@ package com.longcb.vimonintellij.neovim.requesthandler
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -22,8 +24,9 @@ class SyncCursorHandler : IRequestHandler {
         val project = getProject()
         val virtualFile = getVirtualFile(filePath) ?: return null
 
-        ApplicationManager.getApplication().invokeLater {
+        invokeLater {
             FileEditorManager
+
                 .getInstance(project)
                 .openTextEditor(
                     OpenFileDescriptor(project, virtualFile, offset),

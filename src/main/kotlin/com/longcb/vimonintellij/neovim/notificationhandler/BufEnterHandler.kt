@@ -1,7 +1,7 @@
 package com.longcb.vimonintellij.neovim.notificationhandler
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.longcb.vimonintellij.intellij.utils.getProject
@@ -22,7 +22,7 @@ internal class BufEnterHandler : INotificationHandler {
 
         logger.info("Go to $filePath")
 
-        ApplicationManager.getApplication().invokeLater {
+        invokeLater {
             FileEditorManager
                 .getInstance(project)
                 .openFile(virtualFile, true)
