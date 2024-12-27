@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.longcb"
-version = "1.0.2"
+version = "1.0.3"
 
 repositories {
   mavenCentral()
@@ -14,7 +14,7 @@ repositories {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-  version.set("2022.3.3")
+  version.set("2023.2.8")
   type.set("IC") // Target IDE Platform
 
   plugins.set(listOf(/* Plugin Dependencies */))
@@ -38,7 +38,7 @@ tasks {
 
   patchPluginXml {
     sinceBuild.set("221")
-    untilBuild.set("231.*")
+    untilBuild.set("232.*")
   }
 
   signPlugin {
