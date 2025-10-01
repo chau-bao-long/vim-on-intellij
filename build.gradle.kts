@@ -1,11 +1,11 @@
 plugins {
   id("java")
-  id("org.jetbrains.kotlin.jvm") version "2.0.0"
+  id("org.jetbrains.kotlin.jvm") version "2.2.0"
   id("org.jetbrains.intellij") version "1.12.0"
 }
 
 group = "com.longcb"
-version = "1.0.4"
+version = "1.0.5"
 
 repositories {
   mavenCentral()
@@ -14,7 +14,7 @@ repositories {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-  version.set("2024.3.1.1")
+  version.set("2025.2.2")
   type.set("IC") // Target IDE Platform
 
   plugins.set(listOf(/* Plugin Dependencies */))
@@ -27,18 +27,9 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> {
-    sourceCompatibility = "17"
-    targetCompatibility = "17"
-  }
-
-  withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
-  }
-
   patchPluginXml {
     sinceBuild.set("221")
-    untilBuild.set("243.*")
+    untilBuild.set("252.*")
   }
 
   signPlugin {
