@@ -86,6 +86,12 @@ vim.fn.serverstart('localhost:6666')
 
 ### IntelliJ Setup
 
+Config IntelliJ to work on single tab (neovim buffer can only sync with one tab on IntelliJ)
+- Press Cmd + ,
+- In the Settings/Preferences dialog, go to Editor | General | Editor Tabs.
+- Tab placement: None
+- Tab limit: 1
+
 Once the plugin is installed, it will automatically:
 - Connect to Neovim on `localhost:6666`
 - Listen for file open events
